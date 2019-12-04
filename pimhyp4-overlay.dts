@@ -1,0 +1,236 @@
+/*
+ * Device tree overlay for Goodix ft6236 Touchscreen & Pimoroni Hyperpixel4 LCD
+ * V2
+ *
+ * Compile:
+ * dtc -@ -I dts -O dtb -o cypress.dtbo cypress.dts
+ */
+
+#include <dt-bindings/gpio/gpio.h>
+
+/dts-v1/;
+/plugin/;
+/ {
+    /* Identify the RPi models this is compatible with (is this sufficient?) */
+    compatible = "brcm,bcm2708";
+
+    fragment@0 {
+        target = <&leds>;
+        __overlay__ {
+            pinctrl-names = "default";
+            pinctrl-0 = <&dpi18_pins>;
+        };
+    };
+
+    /* Define a group of pins to be configured by the GPIO driver as function 6 = ALT2 = DPI mode */
+    fragment@1 {
+        target = <&gpio>;
+        __overlay__ {
+            dpi18_pins: dpi18_pins {
+                brcm,pins = <0x0 0x1 0x2 0x3 0x4 0x5 0x6 0x7 0x8 0x9    0xc 0xd 0xe 0xf 0x10 0x11     0x14 0x15 0x16 0x17 0x18 0x19>;
+                brcm,function = <0x6>;
+                brcm,pull = <0x0>;
+            };
+        };
+    };
+
+    /* Define a GPIO Bitbanged I2C interface on pins 10 & 11 */
+    fragment@2 {
+        target-path = "/";
+        __overlay__ {
+            i2c_gpio: i2c@0 {
+                #address-cells = <1>;
+                #size-cells = <0>;
+                compatible = "i2c-gpio";
+                gpios = <&gpio 10 (GPIO_ACTIVE_HIGH|GPIO_OPEN_DRAIN) /* sda */ 
+                         &gpio 11 (GPIO_ACTIVE_HIGH|GPIO_OPEN_DRAIN) /* scl */
+                        >;
+                i2c-gpio,delay-us = <4>;        /* ~100 kHz */
+            };
+        };
+    };
+
+    /* Define the Touch Interface chip on the i2c interface */
+    fragment@3 {
+        target = <&i2c_gpio>;
+        __overlay__ {
+            /* needed to avoid dtc warning */
+            #address-cells = <1>;
+            #size-cells = <0>;
+            ft6236_3: ft6236@5d {
+                compatible = "pimoroni,ft6236";
+                reg = <0x5d>;
+                interrupt-parent = <&gpio>;
+                interrupts = <27 2>;
+                irq-gpios  = <&gpio 27 0>; // specify  GPIO27 as the irq line from the TS controller, CLK from LCD
+            };
+        };
+    };
+
+    /* Define the additional bitbanged SPI pins for the LCD */
+    fragment@4 {
+        target = <&ft6236_3>;
+        __overlay__ {
+                mosi-gpios = <&gpio 26 0>; // specify  GPIO26 as the mosi line from the LCD controller
+                cs-gpios   = <&gpio 18 0>; // specify  GPIO27 as the cs line from the LCD controller
+        };
+    };
+
+    /* For check only instead of @4 */
+    fragment@5 {
+        target = <&ft6236_3>;
+        __dormant__ {
+                touchscreen-check;              //Indicate to driver that we are just checking presence.
+        };
+    };
+
+    fragment@6 {
+        target-path = "/";
+        __overlay__ {
+            rpi_backlight: rpi_backlight {
+                compatible = "gpio-backlight";
+                gpios = <&gpio 19 0>;
+                default-on;
+            };
+        };
+    };
+
+    /* display_lcd_rotate=0 */
+    /* Portrait, USB ports on top */
+    fragment@7 {
+        target = <&ft6236_3>;
+        __overlay__ {
+            touchscreen-inverted-x;
+            touchscreen-size-x = <480>;
+            touchscreen-size-y = <800>;
+        };
+    };
+
+    /* display_lcd_rotate=1 */
+    /* Landscape, USB ports on left */
+    fragment@8 {
+        target = <&ft6236_3>;
+        __dormant__ {
+            touchscreen-swapped-x-y;
+            touchscreen-size-x = <480>;
+            touchscreen-size-y = <800>;
+        };
+    };
+
+    /* display_lcd_rotate=2 */
+    /* Portrait, USB ports on bottom */
+    fragment@9  {
+        target = <&ft6236_3>;
+        __dormant__ {
+            touchscreen-inverted-y;
+            touchscreen-size-x = <480>;
+            touchscreen-size-y = <800>;
+        };
+    };
+
+    /* display_lcd_rotate=3 */
+    /* Landscape, USB ports on right */
+    fragment@10 {
+        target = <&ft6236_3>;
+        __dormant__ {
+            touchscreen-swapped-x-y;
+            touchscreen-inverted-x;
+            touchscreen-inverted-y;
+            touchscreen-size-x = <480>;
+            touchscreen-size-y = <800>;
+        };
+    };
+
+//================================================================
+    /* Define the Touch Interface chip on the i2c interface */
+    fragment@11 {
+        target = <&i2c_gpio>;
+        __overlay__ {
+            /* needed to avoid dtc warning */
+            #address-cells = <1>;
+            #size-cells = <0>;
+            ft6236_4: ft6236@14 {
+                compatible = "pimoroni,ft6236";
+                reg = <0x14>;
+                interrupt-parent = <&gpio>;
+                interrupts = <27 2>;
+                irq-gpios  = <&gpio 27 0>; // specify  GPIO27 as the irq line from the TS controller, CLK from LCD
+            };
+        };
+    };
+
+    /* Define the additional bitbanged SPI pins for the LCD */
+    fragment@12 {
+        target = <&ft6236_4>;
+        __overlay__ {
+                mosi-gpios = <&gpio 26 0>; // specify  GPIO26 as the mosi line from the LCD controller
+                cs-gpios   = <&gpio 18 0>; // specify  GPIO27 as the cs line from the LCD controller
+        };
+    };
+
+    /* For check only instead of @4 */
+    fragment@13 {
+        target = <&ft6236_4>;
+        __dormant__ {
+                touchscreen-check;              //Indicate to driver that we are just checking presence.
+        };
+    };
+
+    /* display_lcd_rotate=0 */
+    /* Portrait, USB ports on top */
+    fragment@14 {
+        target = <&ft6236_4>;
+        __overlay__ {
+            touchscreen-inverted-x;
+            touchscreen-size-x = <480>;
+            touchscreen-size-y = <800>;
+        };
+    };
+
+    /* display_lcd_rotate=1 */
+    /* Landscape, USB ports on left */
+    fragment@15 {
+        target = <&ft6236_4>;
+        __dormant__ {
+            touchscreen-swapped-x-y;
+            touchscreen-size-x = <480>;
+            touchscreen-size-y = <800>;
+        };
+    };
+
+    /* display_lcd_rotate=2 */
+    /* Portrait, USB ports on bottom */
+    fragment@16  {
+        target = <&ft6236_4>;
+        __dormant__ {
+            touchscreen-inverted-y;
+            touchscreen-size-x = <480>;
+            touchscreen-size-y = <800>;
+        };
+    };
+
+    /* display_lcd_rotate=3 */
+    /* Landscape, USB ports on right */
+    fragment@17 {
+        target = <&ft6236_4>;
+        __dormant__ {
+            touchscreen-swapped-x-y;
+            touchscreen-inverted-x;
+            touchscreen-inverted-y;
+            touchscreen-size-x = <480>;
+            touchscreen-size-y = <800>;
+        };
+    };
+
+
+//================================================================
+    __overrides__ {
+        rotate =   <0>,"+7-8-9-10+14-15-16-17";
+        rotate_0 = <0>,"+7-8-9-10+14-15-16-17";
+        rotate_1 = <0>,"-7+8-9-10-14+15-16-17";
+        rotate_2 = <0>,"-7-8+9-10-14-15+16-17";
+        rotate_3 = <0>,"-7-8-9+10-14-15-16+17";
+        checkonly= <0>,"-4+5+7-8-9-10 -12+13+14-15-16-17";
+    };
+};
+
