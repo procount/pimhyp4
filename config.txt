@@ -65,7 +65,7 @@ max_framebuffers=2
 [all]
 #dtoverlay=vc4-fkms-v3d
 
-#hormal display
+#normal display
 #--------------
 #dtoverlay=pimhyp4
 #framebuffer_width=480
